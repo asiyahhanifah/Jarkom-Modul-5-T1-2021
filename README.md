@@ -402,7 +402,7 @@ iptables -A PREROUTING -t nat -p tcp -d 10.42.0.19 -m statistic --mode nth --eve
 iptables -A PREROUTING -t nat -p tcp -d 10.42.0.19 -j DNAT --to-destination 10.42.0.10:80
 ```
 
-Pada kasus ini kita menggunakan solusi Load Balancing untuk mendistribusikan koneksi. Untuk mengatasi masalah ini, kita menggunakan -A PREROUTING PREROUTING chain pada -t nat NAT table untuk mengubah destination IP yang awalnya menuju ke 10.42.0.19 DNS Server DORIKI menjadi ke 10.42.0.11:80 Server JORGE port 80 dan 10.42.0.10:80 Server MAINGATE port 80.
+Pada kasus ini kami menggunakan  Load Balancing untuk mendistribusikan koneksi. Kami menggunakan -A PREROUTING PREROUTING chain pada -t nat NAT table untuk mengubah destination IP yang awalnya menuju ke 10.42.0.19 DNS Server DORIKI menjadi ke 10.42.0.11:80 Server JORGE port 80 dan 10.42.0.10:80 Server MAINGATE port 80.
 
 
 
