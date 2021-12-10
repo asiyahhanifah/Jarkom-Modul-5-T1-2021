@@ -238,18 +238,144 @@ max-lease-time 7200;
 ## NO 1
 Agar topologi yang kalian buat dapat mengakses keluar, kalian diminta untuk mengkonfigurasi Foosha menggunakan iptables, tetapi Luffy tidak ingin menggunakan MASQUERADE.
 
+> Setting
+### Foosha
+
+```
+echo '
+auto eth0
+iface eth0 inet static
+    address 192.168.122.2
+    netmask 255.255.255.0
+    broadcast 192.168.122.1
+auto eth1
+iface eth1 inet static
+    address 10.42.0.5
+    netmask 255.255.255.252
+    broadcast 10.42.0.7
+ 
+auto eth2
+iface eth2 inet static
+    address 10.42.0.1
+    netmask 255.255.255.252
+    broadcast 10.42.0.3
+' > /etc/network/interfaces
+```
+
+```
+iptables -t nat -A POSTROUTING -s 10.42.0.0/21 -o eth0 -j SNAT --to-source 192.168.122.2
+```
+
+> Testing
+
+### Foosha
+```
+ping 8.8.8.8
+```
+### Jipangu
+```
+ping 8.8.8.8
+```
 ## NO 2
 Kalian diminta untuk mendrop semua akses HTTP dari luar Topologi kalian pada server yang memiliki ip DHCP dan DNS Server demi menjaga keamanan.
+
+> Setting
+### Foosha
+```
+iptables -A FORWARD -d 10.42.0.16/29 -i eth0 -p tcp -m tcp --dport 80 -j DROP
+```
+
+> Testing
+### Elena
+```
+nmap -p 80 10.42.2.2
+```
+
+![](https://media.discordapp.net/attachments/854638984004239380/918751878014173245/unknown.png?width=1436&height=314)
 
 ## NO 3
 Karena kelompok kalian maksimal terdiri dari 3 orang. Luffy meminta kalian untuk membatasi DHCP dan DNS Server hanya boleh menerima maksimal 3 koneksi ICMP secara bersamaan menggunakan iptables, selebihnya didrop.
 
+> Setting
+### Jipangu
+```
+iptables -A INPUT -p icmp -m connlimit --connlimit-above 3 --connlimit-mask 0 -j DROP
+```
+### Doriki
+```
+iptables -A INPUT -p icmp -m connlimit --connlimit-above 3 --connlimit-mask 0 -j DROP
+```
+> Testing
+
+### Elena
+```
+ping 10.42.0.18
+```
+![](https://media.discordapp.net/attachments/854638984004239380/918751980166467604/unknown.png)
+### Fukurou
+```
+ping 10.42.0.18
+```
+![](https://media.discordapp.net/attachments/854638984004239380/918752056720916520/unknown.png)
+### Blueno
+```
+ping 10.42.0.18
+```
+![](https://media.discordapp.net/attachments/854638984004239380/918752118188437534/unknown.png)
+### Cipher
+```
+ping 10.42.0.18
+```
+![](https://media.discordapp.net/attachments/854638984004239380/918752168381677578/unknown.png)
 ## NO 4
 Akses dari subnet Blueno dan Cipher hanya diperbolehkan pada  pukul 07.00 - 15.00 pada hari Senin sampai Kamis.
 
+> Setting
+### Doriki
+```
+# cipher
+iptables -A INPUT -s 10.42.4.0/22 -m time --weekdays Fri,Sat,Sun -j REJECT
+iptables -A INPUT -s 10.42.4.0/22 -m time --timestart 00:00 --timestop 06:59 --weekdays Mon,Tue,Wed,Thu -j REJECT
+iptables -A INPUT -s 10.42.4.0/22 -m time --timestart 15:01 --timestop 23:59 --weekdays Mon,Tue,Wed,Thu -j REJECT
+
+# blueno
+iptables -A INPUT -s 10.42.0.128/25 -m time --weekdays Fri,Sat,Sun -j REJECT
+iptables -A INPUT -s 10.42.0.128/25 -m time --timestart 00:00 --timestop 06:59 --weekdays Mon,Tue,Wed,Thu -j REJECT
+iptables -A INPUT -s 10.42.0.128/25 -m time --timestart 15:01 --timestop 23:59 --weekdays Mon,Tue,Wed,Thu -j REJECT
+```
+> Testing
+### Cipher
+```
+ping 10.42.0.19
+```
+![](https://cdn.discordapp.com/attachments/854638984004239380/918754041402626058/unknown.png)
+### Blueno
+```
+ping 10.42.0.19
+```
+![](https://media.discordapp.net/attachments/854638984004239380/918754090039795712/unknown.png?width=1436&height=337)
 ## NO 5
 Akses dari subnet Elena dan Fukuro hanya diperbolehkan pada pukul 15.01 hingga pukul 06.59 setiap harinya.
 
+> Setting
+### Doriki
+```
+iptables -A INPUT -s 10.42.2.0/23 -m time --timestart 07:00 --timestop 15:00 -j REJECT
+
+iptables -A INPUT -s 10.42.1.0/24 -m time --timestart 07:00 --timestop 15:00 -j REJECT
+```
+
+> Testing
+### Elena
+```
+ping 10.42.0.19
+```
+![](https://media.discordapp.net/attachments/854638984004239380/918754174643089518/unknown.png?width=1436&height=428)
+### Fukuro
+```
+ping 10.42.0.19
+```
+![](https://media.discordapp.net/attachments/854638984004239380/918754218188374016/unknown.png?width=1436&height=430)
 ## NO 6
 Karena kita memiliki 2 Web Server, Luffy ingin Guanhao disetting sehingga setiap request dari client yang mengakses DNS Server akan didistribusikan secara bergantian pada Jorge dan Maingate
 
