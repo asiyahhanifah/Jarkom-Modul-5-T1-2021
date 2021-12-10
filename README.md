@@ -266,8 +266,11 @@ iface eth2 inet static
 iptables -t nat -A POSTROUTING -s 10.42.0.0/21 -o eth0 -j SNAT --to-source 192.168.122.2
 ```
 
+Di sini kami menggunakan -t nat NAT Table pada -A POSTROUTING POSTROUTING chain untuk -j SNAT mengubah source address yang awalnya berupa private IPv4 address yang memiliki 16-bit blok dari private IP addresses yaitu -s 192.168.0.0/16 10.42.0.0/21  menjadi --to-source 192.168.122.2 IP eth0 Foosha yaitu 192.168.122.2 karena Foosha adalah router yang terhubung ke cloud.
+
 > Testing
 
+Untuk testing, kami mencoba kirim ping keluar pada Foosha dan Jipangu
 ### Foosha
 ```
 ping 8.8.8.8
@@ -285,6 +288,7 @@ Kalian diminta untuk mendrop semua akses HTTP dari luar Topologi kalian pada ser
 iptables -A FORWARD -d 10.42.0.16/29 -i eth0 -p tcp -m tcp --dport 80 -j DROP
 ```
 
+Kita menggunakan -A FORWARD FORWARD chain untuk menyaring paket dengan -p tcp -m tcp protokol TCP dari luar topologi menuju ke DHCP Server JIPANGU dan DNS Server DORIKI (yang berada di satu subnet yang sama yaitu -d 10.42.0.16/29), dimana akses SSH (yang memiliki --dport 80 port 80) yang masuk ke DHCP Server JIPANGU dan DNS Server DORIKI melalui -i eth0 interfaces eth0 dari DHCP Server JIPANGU dan DNS Server DORIKI agar -j DROP di DROP
 > Testing
 ### Elena
 ```
@@ -305,6 +309,9 @@ iptables -A INPUT -p icmp -m connlimit --connlimit-above 3 --connlimit-mask 0 -j
 ```
 iptables -A INPUT -p icmp -m connlimit --connlimit-above 3 --connlimit-mask 0 -j DROP
 ```
+
+Kita menggunakan -A INPUT INPUT chain untuk menyaring paket dengan -p icmp agar protokol ICMP atau ping yang masuk agar dibatasi -m connlimit --connlimit-above 3 hanya sebatas maksimal 3 koneksi saja --connlimit-mask 0 darimana saja, sehingga lebih dari itu akan -j DROP di DROP
+
 > Testing
 
 ### Elena
@@ -343,6 +350,14 @@ iptables -A INPUT -s 10.42.0.128/25 -m time --weekdays Fri,Sat,Sun -j REJECT
 iptables -A INPUT -s 10.42.0.128/25 -m time --timestart 00:00 --timestop 06:59 --weekdays Mon,Tue,Wed,Thu -j REJECT
 iptables -A INPUT -s 10.42.0.128/25 -m time --timestart 15:01 --timestop 23:59 --weekdays Mon,Tue,Wed,Thu -j REJECT
 ```
+
+- Di sini kami menggunakan -A INPUT INPUT chain untuk menyaring paket yang masuk dari -s 10.42.4.0/22 subnet CIPHER dan 10.42.0.128/25 subnet BLUENO
+- Untuk -m time --weekdays Fri, Sat,Sun di jam berapapun pada hari Jumat, Sabtu dan Minggu agar -j REJECT ditolak.
+
+- -m time --timestart 00:00 --timestop 06:59 di waktu jam 00:00 sampai dengan jam 06:59 --weekdays Mon,Tue,Wed,Thu pada hari Senin, Selasa, Rabu, Kamis agar -j REJECT ditolak
+
+- -m time --timestart 15:01 --timestop 23:59 di waktu jam 15:01 sampai dengan jam 23:59 --weekdays Mon,Tue,Wed,Thu pada hari Senin, Selasa, Rabu, Kamis agar -j REJECT ditolak 
+
 > Testing
 ### Cipher
 ```
@@ -364,7 +379,7 @@ iptables -A INPUT -s 10.42.2.0/23 -m time --timestart 07:00 --timestop 15:00 -j 
 
 iptables -A INPUT -s 10.42.1.0/24 -m time --timestart 07:00 --timestop 15:00 -j REJECT
 ```
-
+Di sini digunakan -A INPUT INPUT chain untuk menyaring paket yang masuk dari -s 10.42.2.0/23 subnet ELENA dan 10.42.1.0/24 subnet Fukurou -m time --timestart 07:00 --timestop 15:00 di waktu jam 07:00 sampai dengan jam 15:00  di hari apapun untuk batasan aksesnya -j REJECT ditolak jika diluar batas waktunya
 > Testing
 ### Elena
 ```
@@ -379,7 +394,13 @@ ping 10.42.0.19
 ## NO 6
 Karena kita memiliki 2 Web Server, Luffy ingin Guanhao disetting sehingga setiap request dari client yang mengakses DNS Server akan didistribusikan secara bergantian pada Jorge dan Maingate
 
+```
+iptables -A PREROUTING -t nat -p tcp -d 10.42.0.19 -m statistic --mode nth --every 2 --packet 0 -j DNAT --to-destination 10.42.0.11:80
 
+iptables -A PREROUTING -t nat -p tcp -d 10.42.0.19 -j DNAT --to-destination 10.42.0.10:80
+```
+
+Pada kasus ini kita menggunakan solusi Load Balancing untuk mendistribusikan koneksi. Untuk mengatasi masalah ini, kita menggunakan -A PREROUTING PREROUTING chain pada -t nat NAT table untuk mengubah destination IP yang awalnya menuju ke 10.42.0.19 DNS Server DORIKI menjadi ke 10.42.0.11:80 Server JORGE port 80 dan 10.42.0.10:80 Server MAINGATE port 80.
 
 
 
