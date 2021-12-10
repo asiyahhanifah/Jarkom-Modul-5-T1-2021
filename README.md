@@ -238,7 +238,7 @@ max-lease-time 7200;
 ## NO 1
 Agar topologi yang kalian buat dapat mengakses keluar, kalian diminta untuk mengkonfigurasi Foosha menggunakan iptables, tetapi Luffy tidak ingin menggunakan MASQUERADE.
 
-> Setting
+Pada Foosha dilakukan konfigurasi seperti berikut ini.
 ### Foosha
 
 ```
@@ -261,6 +261,8 @@ iface eth2 inet static
     broadcast 10.42.0.3
 ' > /etc/network/interfaces
 ```
+
+kami menggunakan command -t nat NAT Table pada -A POSTROUTING POSTROUTING chain untuk -jSNAT mengubah source address yang awalnya berupa private IPv4 address yang memiliki 16-bit blok dari private IP addresses yaitu -s 10.42.0.0/21 menjadi --to-source 192.168.122.2 IP eth0 Foosha yaitu 192.168.122.2 karena Foosha adalah satu satunya router yang terhubung ke cloud melalui eth0. 
 
 ```
 iptables -t nat -A POSTROUTING -s 10.42.0.0/21 -o eth0 -j SNAT --to-source 192.168.122.2
